@@ -17,7 +17,7 @@ bash train.sh
 2. json中author数和changes数不一致（./dataset/easy/train/truth-problem-1.json）
 3. 段落数和changes数不一致，可以看log中1633行的报错
 4. 数据分布极不均匀（0/1 分布不均匀）（这可能影响到调参）
-- easy 中label为1的比例： train:0.9131378935939196 validation:0.8980169971671388
+- easy 中label为1的比例： train:0.9131378935939196 validation:0.8980169971671388 (模型将label全置为1，此时acc为0.898)
 - medium 中label为1的比例： train:0.5702351061401506 validation:0.5668554006968641
 - hard 中label为1的比例： train:0.46898184688239936 validation:0.45630597918179616
 
