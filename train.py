@@ -23,12 +23,12 @@ logger = get_logger('my_logger')
 FLAGS = flags.FLAGS
 # data
 flags.DEFINE_string('data_dict',None,'The directory of the data')
-flags.DEFINE_integer('max_length',512,'The maximum length of the input')
+flags.DEFINE_integer('max_length',256,'The maximum length of the input')
 flags.DEFINE_string('category','easy','The category of the data')
 # model
 flags.DEFINE_string('model_type','bert-base-uncased','The type of the model')
 # training
-flags.DEFINE_integer('batch_size',32,'The batch size')
+flags.DEFINE_integer('batch_size',16,'The batch size')
 flags.DEFINE_integer('num_epochs',3,'The number of epochs')
 # optimizer
 flags.DEFINE_integer('seed',42,'The seed for the random number generator')

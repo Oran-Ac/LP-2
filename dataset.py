@@ -27,7 +27,7 @@ def prepare_raw_data(data_dict,category,type):
         with open(txt_file_path,'r', newline="")as f:
             txt_data = f.readlines()
         # check the length of the data
-        if len(txt_data) != len(json_data["changes"]) - 1:
+        if len(txt_data) != len(json_data["changes"]) + 1:
             logger.info(f'Length of the data is not equal to the length of the changes in {txt_file_path}')
             continue
         # get the data
