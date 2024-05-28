@@ -185,8 +185,8 @@ def main(argv):
                 if acc > best_acc:
                     best_acc = acc
                     if accelerator.is_main_process:
-                        accelerator.save(model.state_dict(),os.path.join(FLAGS.output_model_dir,f'{FLAGS.model_type}_{FLAGS.category}.pt'))
-                        logger.info(f'Save the model at {os.path.join(FLAGS.output_model_dir,f"{FLAGS.model_type}_{FLAGS.category}.pt")}')
+                        accelerator.save(model.state_dict(),os.path.join(FLAGS.output_model_dir,f'{FLAGS.model_type.replace("/","-")}_{FLAGS.category}.pt'))
+                        logger.info(f'Save the model at {os.path.join(FLAGS.output_model_dir,f"{FLAGS.model_type.replace("/","-")}_{FLAGS.category}.pt")}')
                 else:
                     patience_counter += 1
                     if patience_counter >= FLAGS.patience:
