@@ -90,7 +90,7 @@ def main(argv):
         logger.info(json.dumps(FLAGS.flag_values_dict(),indent=4))
         logger.info(accelerator.state, main_process_only=False) 
     experiment_config = FLAGS.flag_values_dict()
-    accelerator.init_trackers(FLAGS.model_type, experiment_config, init_kwargs={"wandb": {"mode": "offline",'config':experiment_config}})
+    accelerator.init_trackers(FLAGS.model_type.replace("/","-"), experiment_config, init_kwargs={"wandb": {"mode": "offline",'config':experiment_config}})
     # load the model
     model = AutoModelForSequenceClassification.from_pretrained(FLAGS.model_type,num_labels=2)
     
