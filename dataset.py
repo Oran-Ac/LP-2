@@ -76,14 +76,16 @@ def prepare_data(data_dict,category,type,tokenizer_type,max_length):
         'labels': raw_data['label'].tolist()
     }
     # save the data
-    torch.save(data,os.path.join(data_dict,f'{tokenizer_type}_{category}_{type}.pt'))
+    tokenizer_type_save = tokenizer_type.replace('/','_')
+    torch.save(data,os.path.join(data_dict,f'{tokenizer_type_save}_{category}_{type}.pt'))
     return data
 
 class ClassificationDataset(Dataset):
     def __init__(self, data_dict,category,type,tokenizer_type,max_length):
-        if not os.path.exists(os.path.join(data_dict,f'{tokenizer_type}_{category}_{type}.pt')):
+        tokenizer_type_save = tokenizer_type.replace('/','_')
+        if not os.path.exists(os.path.join(data_dict,f'{tokenizer_type_save}_{category}_{type}.pt')):
             prepare_data(data_dict,category,type,tokenizer_type,max_length)
-        self.data = torch.load(os.path.join(data_dict,f'{tokenizer_type}_{category}_{type}.pt'))
+        self.data = torch.load(os.path.join(data_dict,f'{tokenizer_type_save}_{category}_{type}.pt'))
     def __len__(self):
         return len(self.data['input_ids'])
     def __getitem__(self, idx):
