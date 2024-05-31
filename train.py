@@ -56,7 +56,8 @@ def set_seed(seed):
 
 def data4curriculum_learning(data_dict,tokenizer_type,max_length):
     # categories = ['easy','medium','hard']
-    categories = ['medium','hard']
+    # categories = ['medium','hard']
+    categories = ['hard']
     logger.info('Start preparing the data for curriculum learning')
     for c in categories:
         logger.info(f'Preparing the data for {c}')
@@ -191,6 +192,7 @@ def main(argv):
                 )
                 if acc > best_acc:
                     best_acc = acc
+                    patience_counter = 0
                     if accelerator.is_main_process:
                         model_path = os.path.join(FLAGS.output_model_dir,f'{FLAGS.model_type.replace("/","-")}_{FLAGS.category}.pt')
                         accelerator.save(model.state_dict(),model_path)
