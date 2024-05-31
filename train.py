@@ -55,7 +55,8 @@ def set_seed(seed):
     random.seed(seed)
 
 def data4curriculum_learning(data_dict,tokenizer_type,max_length):
-    categories = ['easy','medium','hard']
+    # categories = ['easy','medium','hard']
+    categories = ['medium','hard']
     logger.info('Start preparing the data for curriculum learning')
     for c in categories:
         logger.info(f'Preparing the data for {c}')
@@ -111,7 +112,13 @@ def main(argv):
                 shuffle=False
             )
             # define the optimizer
-            optimizer = torch.optim.SGD(model.parameters(),lr=FLAGS.lr,momentum=FLAGS.momentum,weight_decay=FLAGS.weight_decay)
+            if FLAGS.optimizer == 'sgd':
+                optimizer = torch.optim.SGD(model.parameters(),lr=FLAGS.lr,momentum=FLAGS.momentum,weight_decay=FLAGS.weight_decay)
+            elif FLAGS.optimizer == 'adamw':
+                optimizer = torch.optim.AdamW(model.parameters(),lr=FLAGS.lr,weight_decay=FLAGS.weight_decay)
+            else:
+                raise NotImplementedError('Not implemented yet')
+
             # define the lr scheduler
             num_training_steps = len(train_dataset) // FLAGS.batch_size * FLAGS.num_epochs
             num_warmup_steps = math.ceil(num_training_steps * FLAGS.warmup_ratio)
@@ -185,8 +192,9 @@ def main(argv):
                 if acc > best_acc:
                     best_acc = acc
                     if accelerator.is_main_process:
-                        accelerator.save(model.state_dict(),os.path.join(FLAGS.output_model_dir,f'{FLAGS.model_type.replace("/","-")}_{FLAGS.category}.pt'))
-                        logger.info(f'Save the model at {os.path.join(FLAGS.output_model_dir,f"{FLAGS.model_type.replace("/","-")}_{FLAGS.category}.pt")}')
+                        model_path = os.path.join(FLAGS.output_model_dir,f'{FLAGS.model_type.replace("/","-")}_{FLAGS.category}.pt')
+                        accelerator.save(model.state_dict(),model_path)
+                        logger.info(f'Save the model at {model_path}')
                 else:
                     patience_counter += 1
                     if patience_counter >= FLAGS.patience:
