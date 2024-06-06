@@ -75,6 +75,9 @@ def main(argv):
     # folder
     if not os.path.exists(FLAGS.output_model_dir):
         os.makedirs(FLAGS.output_model_dir)
+    if FLAGS.distill:
+        FLAGS.output_model_dir = os.path.join(FLAGS.output_model_dir,'distill')
+        os.makedirs(FLAGS.output_model_dir,exist_ok=True)
     if not os.path.exists(FLAGS.output_log_dir):
         os.makedirs(FLAGS.output_log_dir)
     # define the accelerator
@@ -135,8 +138,10 @@ def main(argv):
             loss_fn = nn.CrossEntropyLoss()
             # Prepare everything with our `accelerator`.
             if FLAGS.distill:
-                teacher = AutoModelForSequenceClassification.from_pretrained(FLAGS.teacher_model_type.replace("/","-"),num_labels=2)
-                teacher.load_state_dict(torch.load(os.path.join(FLAGS.teacher_model_path,FLAGS.teacher_model_type.replace("/","-"),category+'.pt')))
+                teacher = AutoModelForSequenceClassification.from_pretrained(FLAGS.teacher_model_type,num_labels=2)
+                teacher_model_path = os.path.join(FLAGS.teacher_model_path,FLAGS.teacher_model_type.replace("/","-"),category+'.pt')
+                teacher.load_state_dict(torch.load(teacher_model_path))
+                logger.info(f'Load the teacher model from {teacher_model_path}')
                 teacher = teacher.to(accelerator.device)
                 teacher.eval()
                 distill_fn = nn.KLDivLoss(reduction='batchmean')
@@ -159,7 +164,7 @@ def main(argv):
             progress_bar = tqdm(range(num_training_steps), disable=not accelerator.is_main_process)
             for epoch in range(FLAGS.num_epochs):
                 total_loss = []
-                distill_loss = []
+                distill_loss_sum = []
                 learning_loss = []
                 model.train()
                 for step, batch in enumerate(train_dataloader):
@@ -173,7 +178,7 @@ def main(argv):
                         loss = (1.0 - FLAGS.temperature) * loss + FLAGS.temperature * distill_loss
                     total_loss.append(loss.item())
                     if FLAGS.distill:
-                        distill_loss.append(distill_loss.item())
+                        distill_loss_sum.append(distill_loss.item())
                     loss = loss / FLAGS.gradient_accumulation_steps
                     accelerator.backward(loss)
                     if step % FLAGS.gradient_accumulation_steps == 0 or step == len(train_dataloader) - 1:
@@ -187,7 +192,7 @@ def main(argv):
                     "train/epoch": epoch,
                     "train/loss": np.mean(total_loss),
                     "train/learning_loss": np.mean(learning_loss),
-                    "train/distill_loss": np.mean(distill_loss),
+                    "train/distill_loss": np.mean(distill_loss_sum),
                 }
                 )
             
@@ -217,7 +222,7 @@ def main(argv):
                     best_acc = acc
                     patience_counter = 0
                     if accelerator.is_main_process:
-                        model_path = os.path.join(FLAGS.output_model_dir,f'{FLAGS.model_type.replace("/","-")}_{FLAGS.category}.pt')
+                        model_path = os.path.join(FLAGS.output_model_dir,f'{FLAGS.model_type.replace("/","-")}_{category}.pt')
                         accelerator.save(model.state_dict(),model_path)
                         logger.info(f'Save the model at {model_path}')
                 else:
