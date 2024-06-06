@@ -174,7 +174,7 @@ def main(argv):
                         learning_loss.append(loss.item())
                         with torch.no_grad():
                             teacher_outputs = teacher(**batch)
-                        distill_loss = distill_fn(outputs.logits / FLAGS.temperature,teacher_outputs.logits / FLAGS.temperature)
+                        distill_loss = distill_fn(outputs.logits ,teacher_outputs.logits)
                         loss = (1.0 - FLAGS.temperature) * loss + FLAGS.temperature * distill_loss
                     total_loss.append(loss.item())
                     if FLAGS.distill:
