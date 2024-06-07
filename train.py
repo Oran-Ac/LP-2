@@ -151,13 +151,13 @@ def main(argv):
                 teacher.eval()
                 distill_fn = nn.KLDivLoss(reduction='batchmean')
                 # test teacher
-                # all_preds = []
-                # for batch in validation_dataloader:
-                #     with torch.no_grad():
-                #         outputs = teacher(**batch)
-                #     all_preds.extend(outputs.logits.argmax(dim=-1).cpu().numpy())
-                # acc = np.mean(np.array(all_preds) == np.array(all_labels))
-                # logger.info(f'Teacher Model - Validation Accuracy: {acc}')
+                all_preds = []
+                for batch in validation_dataloader:
+                    with torch.no_grad():
+                        outputs = teacher(**batch)
+                    all_preds.extend(outputs.logits.argmax(dim=-1).cpu().numpy())
+                acc = np.mean(np.array(all_preds) == np.array(all_labels))
+                logger.info(f'Teacher Model - Validation Accuracy: {acc}')
             # train
             best_acc = 0.0
             patience_counter = 0
