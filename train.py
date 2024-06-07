@@ -16,6 +16,7 @@ import math
 import os
 # import self-defined functions
 from dataset import *
+from torch.nn import functional as F
 
 
 logger = get_logger('my_logger')
@@ -48,7 +49,8 @@ flags.DEFINE_boolean('curriculum_learning',True,'curriculum learning')
 flags.DEFINE_boolean('distill',False,'distill')
 flags.DEFINE_string('teacher_model_type','bert-base-uncased','The type of the teacher model')
 flags.DEFINE_string('teacher_model_path',None,'The path of the teacher model')
-flags.DEFINE_float('temperature',1.0,'The temperature for distillation')
+flags.DEFINE_float('ratio',1.0,'The ratio for distillation')
+flags.DEFINE_list('categories',['easy','medium','hard'],'The categories for curriculum learning')
 
 def set_seed(seed):
     # set seed
@@ -60,10 +62,10 @@ def set_seed(seed):
 def data4curriculum_learning(data_dict,tokenizer_type,max_length):
     # categories = ['easy','medium','hard']
     # categories = ['medium','hard']
-    categories = ['hard']
+    # categories = ['hard']
     # categories = ['medium']
     logger.info('Start preparing the data for curriculum learning')
-    for c in categories:
+    for c in FLAGS.categories:
         logger.info(f'Preparing the data for {c}')
         train_dataset = ClassificationDataset(data_dict,c,'train',tokenizer_type,max_length)
         validation_dataset = ClassificationDataset(data_dict,c,'validation',tokenizer_type,max_length)
@@ -136,19 +138,26 @@ def main(argv):
                 raise NotImplementedError('Not implemented yet')
             # define the loss function
             loss_fn = nn.CrossEntropyLoss()
+            train_dataloader, validation_dataloader, model, optimizer = accelerator.prepare(
+                train_dataloader, validation_dataloader, model, optimizer
+            )
             # Prepare everything with our `accelerator`.
             if FLAGS.distill:
                 teacher = AutoModelForSequenceClassification.from_pretrained(FLAGS.teacher_model_type,num_labels=2)
                 teacher_model_path = os.path.join(FLAGS.teacher_model_path,FLAGS.teacher_model_type.replace("/","-"),category+'.pt')
-                teacher.load_state_dict(torch.load(teacher_model_path))
+                teacher.load_state_dict(torch.load(teacher_model_path,map_location=accelerator.device))
                 logger.info(f'Load the teacher model from {teacher_model_path}')
                 teacher = teacher.to(accelerator.device)
                 teacher.eval()
                 distill_fn = nn.KLDivLoss(reduction='batchmean')
-
-            train_dataloader, validation_dataloader, model, optimizer = accelerator.prepare(
-                train_dataloader, validation_dataloader, model, optimizer
-            )
+                # test teacher
+                # all_preds = []
+                # for batch in validation_dataloader:
+                #     with torch.no_grad():
+                #         outputs = teacher(**batch)
+                #     all_preds.extend(outputs.logits.argmax(dim=-1).cpu().numpy())
+                # acc = np.mean(np.array(all_preds) == np.array(all_labels))
+                # logger.info(f'Teacher Model - Validation Accuracy: {acc}')
             # train
             best_acc = 0.0
             patience_counter = 0
@@ -174,8 +183,10 @@ def main(argv):
                         learning_loss.append(loss.item())
                         with torch.no_grad():
                             teacher_outputs = teacher(**batch)
-                        distill_loss = distill_fn(outputs.logits ,teacher_outputs.logits)
-                        loss = (1.0 - FLAGS.temperature) * loss + FLAGS.temperature * distill_loss
+                        student_prediction = F.log_softmax(outputs.logits ,dim=-1)
+                        teacher_prediction = F.softmax(teacher_outputs.logits,dim=-1)
+                        distill_loss = distill_fn(student_prediction ,teacher_prediction)
+                        loss = (1-FLAGS.ratio) * loss + FLAGS.ratio * distill_loss
                     total_loss.append(loss.item())
                     if FLAGS.distill:
                         distill_loss_sum.append(distill_loss.item())
