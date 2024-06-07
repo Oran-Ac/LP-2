@@ -141,7 +141,7 @@ class ClassificationDataset(Dataset):
     def __len__(self):
         return len(self.data['input_ids'])
 
-    def __getitem__(self, idx):git pull origin master
+    def __getitem__(self, idx):
         return {
             'input_ids': self.data['input_ids'][idx],
             'attention_mask': self.data['attention_mask'][idx],
