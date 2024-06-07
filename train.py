@@ -17,7 +17,7 @@ import os
 # import self-defined functions
 from dataset import *
 from torch.nn import functional as F
-
+from sklearn.metrics import f1_score
 
 logger = get_logger('my_logger')
 
@@ -152,10 +152,12 @@ def main(argv):
                 distill_fn = nn.KLDivLoss(reduction='batchmean')
                 # test teacher
                 all_preds = []
+                all_labels = []
                 for batch in validation_dataloader:
                     with torch.no_grad():
                         outputs = teacher(**batch)
                     all_preds.extend(outputs.logits.argmax(dim=-1).cpu().numpy())
+                    all_labels.extend(batch['labels'].cpu().numpy())
                 acc = np.mean(np.array(all_preds) == np.array(all_labels))
                 logger.info(f'Teacher Model - Validation Accuracy: {acc}')
             # train
@@ -220,6 +222,7 @@ def main(argv):
                     loss = loss_fn(outputs.logits,batch['labels'])
                     total_loss.append(loss.item())
                 acc = np.mean(np.array(all_preds) == np.array(all_labels))
+                f1 = f1_score(all_labels,all_preds)
                 if accelerator.is_main_process:
                     logger.info(f'Epoch {epoch+1}/{FLAGS.num_epochs} - Validation Accuracy: {acc} - Validation Loss: {np.mean(total_loss)}')
                     accelerator.log(
