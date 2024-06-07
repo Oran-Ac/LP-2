@@ -224,12 +224,13 @@ def main(argv):
                 acc = np.mean(np.array(all_preds) == np.array(all_labels))
                 f1 = f1_score(all_labels,all_preds)
                 if accelerator.is_main_process:
-                    logger.info(f'Epoch {epoch+1}/{FLAGS.num_epochs} - Validation Accuracy: {acc} - Validation Loss: {np.mean(total_loss)}')
+                    logger.info(f'Epoch {epoch+1}/{FLAGS.num_epochs} - Validation Accuracy: {acc} - Validation F1: {f1} - Validation Loss: {np.mean(total_loss)}')
                     accelerator.log(
                         {
                         "validation/epoch": epoch,
                         "validation/loss": np.mean(total_loss),
                         "validation/accuracy": acc,
+                        "validation/f1": f1,
                     }
                 )
                 if acc > best_acc:
